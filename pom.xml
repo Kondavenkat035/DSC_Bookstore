@@ -8,6 +8,7 @@
     <groupId>com.example.bookstore</groupId>
     <artifactId>bookstore</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>war</packaging>
 
     <!-- ✅ Java Version -->
@@ -90,12 +91,12 @@
 
         <repository>
             <id>nexus-releases</id>
-            <url>http://13.201.94.125:8081/repository/maven-releases/</url>
+            <url>http://localhost:8081/repository/maven-releases/</url>
         </repository>
 
         <snapshotRepository>
             <id>nexus-snapshots</id>
-            <url>http://13.201.94.125:8081/repository/maven-snapshots/</url>
+            <url>http://localhost:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
 
     </distributionManagement>
