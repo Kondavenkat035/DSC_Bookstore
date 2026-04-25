@@ -1,6 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -9,9 +10,14 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
 
+    <!-- ✅ Java Version -->
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+
+        <!-- ✅ Sonar Config -->
+        <sonar.projectKey>bookstore</sonar.projectKey>
+        <sonar.sources>bookstore/src/main/webapp</sonar.sources>
     </properties>
 
     <!-- ✅ Dependencies -->
@@ -33,28 +39,43 @@
 
     <!-- ✅ Build Configuration -->
     <build>
+
+        <!-- 🔥 Tell Maven where your webapp is -->
+        <directory>${project.basedir}/target</directory>
+
+        <resources>
+            <resource>
+                <directory>bookstore/src/main/webapp</directory>
+            </resource>
+        </resources>
+
         <plugins>
 
-            <!-- WAR Plugin -->
+            <!-- ✅ Compiler Plugin -->
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+            </plugin>
+
+            <!-- ✅ WAR Plugin (IMPORTANT FIX) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.3.2</version>
                 <configuration>
-                    <webResources>
-                        <resource>
-                            <directory>src/main/webapp</directory>
-                            <includes>
-                                <include>**/*.html</include>
-                                <include>**/*.js</include>
-                                <include>**/*.css</include>
-                            </includes>
-                        </resource>
-                    </webResources>
+                    <!-- 🔥 FIX: point to correct folder -->
+                    <warSourceDirectory>bookstore/src/main/webapp</warSourceDirectory>
                 </configuration>
             </plugin>
 
-            <!-- ✅ Maven Deploy Plugin (for Nexus) -->
+            <!-- ✅ Sonar Plugin -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>4.0.0.4121</version>
+            </plugin>
+
+            <!-- ✅ Deploy Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
@@ -67,17 +88,13 @@
     <!-- ✅ Nexus Configuration -->
     <distributionManagement>
 
-        <!-- Release Repo -->
         <repository>
             <id>nexus-releases</id>
-            <name>Nexus Releases</name>
             <url>http://13.201.94.125:8081/repository/maven-releases/</url>
         </repository>
 
-        <!-- Snapshot Repo (used because version is SNAPSHOT) -->
         <snapshotRepository>
             <id>nexus-snapshots</id>
-            <name>Nexus Snapshots</name>
             <url>http://13.201.94.125:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
 
