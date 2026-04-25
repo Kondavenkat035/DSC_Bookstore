@@ -39,7 +39,8 @@ pipeline {
               withMaven(globalMavenSettingsConfig: 'settings.xml', jdk: 'jdk17', maven: 'maven3', traceability: true) {
              sh 'mvn deploy'
              }
-            }
+          }
+        }   
 
         stage('Build Docker Image') {
             steps {
@@ -71,5 +72,4 @@ pipeline {
             }
         }
     }
-}
 }
