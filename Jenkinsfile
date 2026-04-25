@@ -6,7 +6,6 @@ pipeline {
         TAG = "${BUILD_NUMBER}"
         SONARQUBE_ENV = 'sonarqube'
         AWS_DEFAULT_REGION = "ap-south-1"
-        KUBECONFIG = "/var/lib/jenkins/.kube/config"
     }
 
     stages {
@@ -16,11 +15,13 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Kondavenkat035/DSC_Bookstore.git'
             }
         }
-        stage('Install') {
+
+        stage('Build Maven') {
             steps {
                 sh 'mvn clean package'
             }
         }
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv("${SONARQUBE_ENV}") {
@@ -31,18 +32,19 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'MINUTES') {
+                timeout(time: 2, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
-        stage('JENKINS TO NEXUS') {
+
+        stage('Deploy to Nexus') {
             steps {
-              withMaven(globalMavenSettingsConfig: 'settings.xml', jdk: 'jdk17', maven: 'maven3', traceability: true) {
-             sh 'mvn deploy'
-             }
-          }
-        }   
+                withMaven(globalMavenSettingsConfig: 'settings.xml', jdk: 'jdk17', maven: 'maven3', traceability: true) {
+                    sh 'mvn deploy'
+                }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -58,63 +60,77 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     '''
                 }
             }
         }
 
-        stage('Push Image to DockerHub') {
+        stage('Push Docker Image') {
             steps {
                 sh """
-                docker push ${DOCKER_IMAGE}:${TAG}
-                docker tag ${DOCKER_IMAGE}:${TAG} ${DOCKER_IMAGE}:latest
-                docker push ${DOCKER_IMAGE}:latest
+                    docker tag ${DOCKER_IMAGE}:${TAG} ${DOCKER_IMAGE}:latest
+                    docker push ${DOCKER_IMAGE}:${TAG}
+                    docker push ${DOCKER_IMAGE}:latest
                 """
             }
         }
-        stage('Deploy to Kubernetes') {
-            steps {
-                withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]){
-                sh '''
-                aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name new-cluster
 
-                kubectl apply -f k8s/deployment.yml
-                kubectl apply -f k8s/service.yml
-                kubectl apply -f k8s/ingress.yml
-                '''
+        stage('Deploy to Kubernetes (EKS)') {
+            steps {
+                withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG
+
+                        echo "Deploying to EKS..."
+
+                        kubectl apply -f k8s/deployment.yml
+                        kubectl apply -f k8s/service.yml
+
+                        echo "Deployment status:"
+                        kubectl get pods
+                        kubectl get svc
+                    '''
                 }
             }
         }
 
-        stage('Show App URL') {
+        stage('Show Application URL') {
             steps {
-                sh '''
-                echo "Waiting for Ingress LoadBalancer to provision..."
-                
-                RETRIES=0
-                URL=""
+                withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG
 
-                while [ -z "$URL" ] && [ $RETRIES -lt 18 ]; do
-                    URL=$(kubectl get ingress k8s-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-                    
-                    if [ -z "$URL" ]; then
-                        echo "Ingress hostname not ready... waiting 10s ($((RETRIES+1))/18)"
-                        sleep 10
-                        RETRIES=$((RETRIES+1))
-                    fi
-                done
+                        echo "Fetching LoadBalancer URL..."
 
-                echo "======================================"
-                if [ -z "$URL" ]; then
-                    echo "ERROR: LoadBalancer timed out. Check AWS Console."
-                else
-                    echo "Application deployed successfully!"
-                    echo "Rose Service: http://$URL/bookstore"
-                fi
-                echo "======================================"
-                '''
+                        for i in {1..20}; do
+                            URL=$(kubectl get svc bookstore-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+
+                            if [ "$URL" != "" ]; then
+                                echo "========================================"
+                                echo "Application Deployed Successfully 🚀"
+                                echo "URL: http://$URL"
+                                echo "========================================"
+                                exit 0
+                            fi
+
+                            echo "Waiting for LoadBalancer... attempt $i/20"
+                            sleep 15
+                        done
+
+                        echo "ERROR: LoadBalancer not ready. Check AWS console."
+                    '''
+                }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "PIPELINE SUCCESS 🚀"
+        }
+        failure {
+            echo "PIPELINE FAILED ❌"
         }
     }
 }
