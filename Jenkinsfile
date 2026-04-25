@@ -12,10 +12,6 @@ pipeline {
         HOST_PORT    = "8082"
         CONTAINER_PORT = "8080"
 
-        NEXUS_URL = "http://<your-nexus-ip>:8081"
-        NEXUS_REPO = "maven-releases"
-        GROUP_ID = "com/bookstore"
-        ARTIFACT_ID = "bookstore"
     }
 
     stages {
@@ -34,20 +30,6 @@ pipeline {
             }
         }
 
-        stage('Get Version') {
-            steps {
-                dir('bookstore') {
-                    script {
-                        VERSION = sh(
-                            script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout",
-                            returnStdout: true
-                        ).trim()
-                        env.VERSION = VERSION
-                    }
-                }
-            }
-        }
-
         stage('Upload to Nexus') {
             steps {
                 dir('bookstore') {
@@ -57,7 +39,7 @@ pipeline {
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
                         sh """
-                        JAR_FILE=\$(ls target/*.jar | head -n 1)
+                        JAR_FILE=\$(ls target/*.war | head -n 1)
 
                         curl -u $NEXUS_USER:$NEXUS_PASS \
                         --upload-file \$JAR_FILE \
