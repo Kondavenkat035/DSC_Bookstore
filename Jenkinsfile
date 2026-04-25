@@ -11,6 +11,7 @@ pipeline {
         CONTAINER_NAME = "bookstore"
         HOST_PORT    = "8082"
         CONTAINER_PORT = "8080"
+        SONARQUBE_ENV = 'sonarqube'
 
         NEXUS_URL = "http://13.201.94.125:8081"
         NEXUS_REPO = "maven-releases"
@@ -30,6 +31,21 @@ pipeline {
             steps {
                 dir('bookstore') {
                     sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
