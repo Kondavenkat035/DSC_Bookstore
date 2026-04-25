@@ -86,7 +86,6 @@ pipeline {
 
                         kubectl apply -f k8s/deployment.yml
                         kubectl apply -f k8s/service.yml
-                        kubectl apply -f k8s/ingress.yml
 
                         echo "Deployment status:"
                         kubectl get pods
@@ -104,7 +103,7 @@ pipeline {
 
                         echo "Fetching LoadBalancer URL..."
 
-                        for i in {1..20}; do
+                        for i in {1..2}; do
                             URL=$(kubectl get svc bookstore-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
 
                             if [ "$URL" != "" ]; then
@@ -116,7 +115,7 @@ pipeline {
                             fi
 
                             echo "Waiting for LoadBalancer... attempt $i/20"
-                            sleep 15
+                            sleep 5
                         done
 
                         echo "ERROR: LoadBalancer not ready. Check AWS console."
