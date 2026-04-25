@@ -47,7 +47,7 @@ pipeline {
 
                         curl -u $NEXUS_USER:$NEXUS_PASS \
                         --upload-file \$JAR_FILE \
-                        ${NEXUS_URL}/repository/${NEXUS_REPO}/${GROUP_ID}/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${VERSION}.jar
+                        ${NEXUS_URL}/repository/${NEXUS_REPO}/${GROUP_ID}/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${VERSION}.war
                         """
                     }
                 }
