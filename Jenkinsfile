@@ -74,7 +74,8 @@ pipeline {
             }
         }
         stage('Deploy to Kubernetes') {
-            steps {
+            steps 
+                withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]){
                 sh '''
                 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name new-cluster
 
