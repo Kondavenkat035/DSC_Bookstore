@@ -81,11 +81,8 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
-                        export KUBECONFIG=$WORKSPACE/kubeconfig
+                        export KUBECONFIG=$KUBECONFIG
                 
-                        aws eks update-kubeconfig --region ap-south-1 --name new-cluster --kubeconfig $KUBECONFIG
-                        kubectl get nodes
-
                         echo "Deploying to EKS..."
 
                         kubectl apply -f k8s/deployment.yml
@@ -103,7 +100,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
-
+                        export KUBECONFIG=$KUBECONFIG
                         echo "Fetching LoadBalancer URL..."
 
                         for i in {1..2}; do
