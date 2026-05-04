@@ -78,7 +78,8 @@ pipeline {
         stage('deploy'){
             steps{
                  sh """
-                docker run -itd --name dsc_bookstore -p 8082:8080 ${DOCKER_IMAGE}:${TAG} ${DOCKER_IMAGE}:latest
+                 docker rm -f dsc_bookstore
+                docker run -itd --name dsc_bookstore -p 8082:8080 ${DOCKER_IMAGE}:latest
                  """  
             }
         }
