@@ -75,54 +75,13 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes (EKS)') {
-            steps {
-                withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
-                    sh '''
-                        export KUBECONFIG=$KUBECONFIG
-                
-                        echo "Deploying to EKS..."
-
-                        kubectl apply -f k8s/deployment.yml
-                        kubectl apply -f k8s/service.yml
-
-                        echo "Deployment status:"
-                        kubectl get pods
-                        kubectl get svc
-                    '''
-                }
+        stage('deploy'){
+            steps{
+                 sh """
+                docker run -itd --name dsc_bookstore -p 8082:8080 ${DOCKER_IMAGE}:${TAG} ${DOCKER_IMAGE}:latest
+                 """  
             }
         }
-
-        stage('Show Application URL') {
-            steps {
-                withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
-                    sh '''
-                        export KUBECONFIG=$KUBECONFIG
-                        echo "Fetching LoadBalancer URL..."
-
-                        for i in {1..2}; do
-                            URL=$(kubectl get svc bookstore-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-
-                            if [ "$URL" != "" ]; then
-                                echo "========================================"
-                                echo "Application Deployed Successfully 🚀"
-                                echo "URL: http://$URL"
-                                echo "========================================"
-                                exit 0
-                            fi
-
-                            echo "Waiting for LoadBalancer... attempt $i/20"
-                            sleep 5
-                        done
-
-                        echo "ERROR: LoadBalancer not ready. Check AWS console."
-                    '''
-                }
-            }
-        }
-    }
-
     post {
         success {
             echo "PIPELINE SUCCESS 🚀"
