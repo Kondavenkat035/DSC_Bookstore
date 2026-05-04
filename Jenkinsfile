@@ -90,7 +90,7 @@ pipeline {
             echo "PIPELINE FAILED ❌"
         }
     }
-}
+ }
 }    
 
 
